@@ -66,5 +66,4 @@ public class UrlShortenerService {
         return shortUrlRepository.findByShortUrl(shortUrl).map(ShortUrl::getLongUrl).orElse(null);
     }
 
-
 }
