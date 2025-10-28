@@ -1,18 +1,25 @@
 package com.shortenurl.controller;
 
+import com.shortenurl.model.UrlClick;
+import com.shortenurl.repository.UrlClickRepository;
 import com.shortenurl.service.UrlShortenerService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/url")
 public class UrlShortenerController {
     private final UrlShortenerService urlShortenerService;
+    private final UrlClickRepository urlClickRepository; 
 
-    public UrlShortenerController(UrlShortenerService urlShortenerService) {
+    public UrlShortenerController(UrlShortenerService urlShortenerService, UrlClickRepository ) {
         this.urlShortenerService = urlShortenerService;
     }
 
@@ -29,8 +36,17 @@ public class UrlShortenerController {
 
     //Sample URL : http://localhost:8080/api/url/aHR0cH
     @GetMapping("/{shortUrl}")
-    public String getLongUrl(@PathVariable String shortUrl){
-        return urlShortenerService.getLongUrl(shortUrl);
+    public ResponseEntity<String> getLongUrl(@PathVariable String shortUrl , HttpServletRequest request){
+        String originalUrl = urlShortenerService.getOriginalUrl(shortUrl);
+        if(originalUrl == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        //Log the click
+        String ip = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+        urlClickRepository.save(new UrlClick(shortUrl,ip,userAgent,LocalDateTime.now()));
+        return ResponseEntity.ok(originalUrl);
     }
 
     //Sample URL : http://localhost:8080/api/url/delete?longUrl=https://example.com
